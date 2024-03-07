@@ -15,7 +15,6 @@ function getGridBoxTexture(gameTile: GameTile) {
   } else if (gameTile.spaceOccupied === 'user') {
     return "bg-yellow-400";
   } else if (gameTile.spaceOccupied instanceof Ghost) {
-    console.log("SDSDSD");
     return gameTile.spaceOccupied.color;
   }
 

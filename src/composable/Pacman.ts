@@ -1,6 +1,6 @@
 import {ref} from "vue";
 import type LayoutBase from "@/layouts/LayoutBase";
-import _ from "lodash";
+import _ from "lodash"
 
 export type Position = {
     x: number,
@@ -50,9 +50,9 @@ export default function usePacman() {
         gridLayout.value[position.value.y][position.value.x].spaceOccupied = 'user'
         populateBoard();
 
-        setInterval(function () {
-            gameTick()
-        }, 1000)
+        // setInterval(function () {
+        //     gameTick()
+        // }, 1000)
     }
 
     function populateBoard() {
@@ -61,59 +61,33 @@ export default function usePacman() {
         });
     }
 
-    function canMoveToPosition(position: Position): Position|undefined {
-
-        const currentDimensions = dimensions.value;
-        if (currentDimensions?.width === undefined || currentDimensions?.height === undefined) {
-            console.error("The current dimensions aren't set correctly")
-            return
-        }
-        const isValidNewYPosition = position.y >= 0 && position.y < currentDimensions.height;
-
-        if (!isValidNewYPosition) {
-            return undefined;
-        }
-
-        if (position.x < 0 && gridLayout.value[position.y][currentDimensions.width - 1].canNavigateTo) {
-            position.x = currentDimensions.width - 1;
-        } else if (position.x >= currentDimensions.width && gridLayout.value[position.y][0].canNavigateTo) {
-            position.x = 0;
-        }
-
-        const isValidNewXPosition = position.x >= 0 && position.x < currentDimensions.width;
-
-        return isValidNewXPosition &&
-            isValidNewYPosition &&
-            gridLayout.value[position.y][position.x].canNavigateTo ? position : undefined
-
-    }
-
-    function moveGhost(ghost: Ghost) {
-        const positions = _.shuffle([
-            [0, 1],
-            [0, -1],
-            [1, 0],
-            [-1, 0]
-        ])
-
-        for (let i = 0; i < positions.length; i++) {
-            const [x, y] = positions[i];
-            if (tryMoveToPosition(ghost.position, {x: x + ghost.position.x, y: y + ghost.position.y}, ghost)) {
-                break
-            }
-        }
-    }
-
-    function gameTick() {
-        ghostPositions.value.forEach((ghost: Ghost) => {
-            moveGhost(ghost)
-        })
-    }
+    // function moveGhost(ghost: Ghost) {
+    //     const positions = _.shuffle([
+    //         [0, 1],
+    //         [0, -1],
+    //         [1, 0],
+    //         [-1, 0]
+    //     ])
+    //
+    //     for (let i = 0; i < positions.length; i++) {
+    //         const [x, y] = positions[i];
+    //         if (tryMoveToPosition(ghost.position, {x: x + ghost.position.x, y: y + ghost.position.y}, ghost)) {
+    //             break
+    //         }
+    //     }
+    // }
+    //
+    // function gameTick() {
+    //     ghostPositions.value.forEach((ghost: Ghost) => {
+    //         moveGhost(ghost)
+    //     })
+    // }
+    //
 
     function move(xDelta: number, yDelta: number) {
         const currentPosition = position.value;
         if (currentPosition === undefined) {
-            console.error("Make sure the position and dimensions are set before trying to move")
+            console.error("Make sure the position is set before trying to move")
             return
         }
 
@@ -125,26 +99,45 @@ export default function usePacman() {
         const newX = currentPosition.x + xDelta;
         const newY = currentPosition.y + yDelta;
 
-        const newPosition = canMoveToPosition({x: newX, y: newY});
-        if (newPosition) {
-            gridLayout.value[currentPosition.y][currentPosition.x].spaceOccupied = 'none';
-            gridLayout.value[newY][newX].spaceOccupied = 'user';
+        const newPosition = {x: newX, y: newY}
+        if (tryMoveToPosition(currentPosition, newPosition, 'user')) {
+            position.value = newPosition
         }
     }
 
     function tryMoveToPosition(oldPosition: Position, newPosition: Position, type: 'user'|Ghost) {
-        const validPosition = canMoveToPosition(newPosition);
-        if (validPosition) {
-            gridLayout.value[oldPosition.y][oldPosition.x].spaceOccupied = 'none';
-            gridLayout.value[validPosition.y][validPosition.x].spaceOccupied = type;
 
+        const currentDimensions = dimensions.value;
+        if (currentDimensions?.width === undefined || currentDimensions?.height === undefined) {
+            console.error("The current dimensions aren't set correctly")
+            return false;
+        }
+        const isValidNewYPosition = newPosition.y >= 0 && newPosition.y < currentDimensions.height;
+
+        if (!isValidNewYPosition) {
+            return false;
+        }
+
+        if (newPosition.x < 0 && gridLayout.value[newPosition.y][currentDimensions.width - 1].canNavigateTo) {
+            newPosition.x = currentDimensions.width - 1;
+        } else if (newPosition.x >= currentDimensions.width && gridLayout.value[newPosition.y][0].canNavigateTo) {
+            newPosition.x = 0;
+        }
+
+        const isValidNewXPosition = newPosition.x >= 0 && newPosition.x < currentDimensions.width;
+
+        if (isValidNewXPosition &&
+        isValidNewYPosition &&
+        gridLayout.value[newPosition.y][newPosition.x].canNavigateTo) {
+
+            gridLayout.value[oldPosition.y][oldPosition.x].spaceOccupied = 'none';
+            gridLayout.value[newPosition.y][newPosition.x].spaceOccupied = type;
             if (type instanceof Ghost) {
                 type.position = newPosition;
             }
-
-            return true;
+            return true
         }
-        return false;
+        return false
     }
 
     return { position, gridLayoutRef: gridLayout, move, dimensions, setup }
